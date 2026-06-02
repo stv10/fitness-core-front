@@ -1,29 +1,15 @@
-# Frontend Development Rules - Fitness Core (Public & Proprietary)
+# Frontend Development Guidelines - Fitness Core
 
-As the AI coding assistant for this frontend repository, you must adhere to the following rules and good practices:
+As the AI coding assistant for this frontend repository, follow these guidelines:
 
-## 1. Technology Stack & Design Patterns
-- **Technologies**: React, Vite, TypeScript.
-- **PWA Integrity**: Progressive Web App features are configured using `vite-plugin-pwa`. Ensure service worker registration (`sw.js`) and manifest settings are not disrupted during package upgrades or code changes.
-- **Styling**: Use Vanilla CSS for all custom component layouts. Do NOT use utility-first frameworks like TailwindCSS unless explicitly requested by the USER.
+## 1. Tech Stack
+- **Framework**: React, Vite, TypeScript.
+- **PWA**: Configured via `vite-plugin-pwa`. Ensure service worker registration remains functional.
+- **Styling**: Vanilla CSS. Avoid using TailwindCSS unless explicitly requested.
 
-## 2. Design System Adherence (design.md)
-- **Design Tokens**: Standardize layout and color configurations according to `design.md`.
-- **Colors (Luminous Performance)**:
-  - Surface backgrounds: `#0e1322` / `#161b2a`
-  - Fluorescent primary accents: Electric Lime (`#b0d500` / `#caf300`)
-  - Calming details: Sky Blue (`#cee5ff` / `#0069a5`)
-  - Warning/High Intensity details: Soft Coral (`#ffb4ab` / `#93000a`)
-- **Typography**: Lexend for headings and performance metrics; Inter for descriptions and uppercase labels.
-- **Aesthetic**: Leverage glassmorphic elements, 8px layout rhythm, and subtle pulse / glow effects for interactive and high-visibility data areas.
+## 2. Design System (design.md)
+- Follow the colors, fonts (Lexend/Inter), and 8px spacing tokens specified in `design.md`.
 
-## 3. Git & Documentation Rules
-- **Conventional Commits**: Ensure commit messages use conventional formatting (e.g., `feat(ui): add dashboard dark mode`, `fix(api): retry websocket connections`).
-- **Changelog**: Every change MUST be documented in the `Changelog` section at the bottom of `frontend/README.md` under the appropriate tags (`[Added]`, `[Changed]`, `[Fixed]`, etc.) before making a Pull Request.
-
-## 4. Security & Secrets Protection
-- **Vite env naming**: All client-side env variables must be prefixed with `VITE_` (e.g., `VITE_API_URL`).
-- **Zero secrets in Git**: Never commit `.env` or configurations with production URLs/keys. Use `.env.template` for tracking env structures.
-
-## 5. Licensing & Copying
-- The frontend is **Proprietary (All Rights Reserved)**. Ensure that no GPL or copyleft dependencies are added to `package.json`, and do not pull code blocks from unlicensed open-source packages.
+## 3. General Practices
+- Standard Git commit messages are preferred.
+- Keep environment variables prefixed with `VITE_` and document them in `.env.template`.
