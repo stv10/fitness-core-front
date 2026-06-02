@@ -63,3 +63,10 @@ All notable changes to this project will be documented in this section.
 - `feat(ui)` Created a premium dark mode dashboard using custom CSS tokens and glassmorphism.
 - `feat(api)` Integrated connection checks to backend `/api/ping`.
 - `feat(workout)` Added interactive state simulation for logging workouts.
+
+---
+
+## License
+
+This project is **proprietary** and all rights are reserved. It is public for code review and demonstration purposes only. See the [LICENSE](file:///D:/repos/fitness-core/frontend/LICENSE) file for more details.
+
