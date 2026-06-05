@@ -47,7 +47,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
@@ -56,7 +56,7 @@ jobs:
 
       # Connect to Tailscale to access the private Dokploy instance
       - name: Connect to Tailscale
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: tailscale/github-action@v2
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
@@ -65,6 +65,6 @@ jobs:
 
       # Trigger redeployment on Dokploy using the Tailscale private URL
       - name: Trigger Dokploy Deploy
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           curl -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}"
