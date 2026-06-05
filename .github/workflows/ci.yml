@@ -51,6 +51,8 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+          build-args: |
+            VITE_API_URL=https://fit.api.stv10.com
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

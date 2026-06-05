@@ -8,6 +8,11 @@ RUN npm ci
 
 # Copy sources and build the PWA app
 COPY . .
+
+# Accept VITE_API_URL as a build argument and set it as an env variable
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
 # Stage 2: Serve the application using Nginx
