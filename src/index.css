@@ -1,37 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Premium Dark Theme Color Palette */
-  --bg-primary: #090b11;
-  --bg-secondary: #121622;
-  --bg-tertiary: #1b2132;
-  --bg-glass: rgba(18, 22, 34, 0.7);
+  /* Luminous Performance Dark Theme Color Palette */
+  --bg-primary: #0e1322; /* Midnight Navy Floor */
+  --bg-secondary: #161b2a; /* Surface Container Low */
+  --bg-tertiary: #1a1f2e; /* Surface Container */
+  --bg-glass: rgba(22, 27, 42, 0.65);
   --border-color: rgba(255, 255, 255, 0.08);
   --border-hover: rgba(255, 255, 255, 0.15);
   
   /* Vibrant Accent Colors (No generic colors) */
-  --accent-primary: #6366f1; /* Indigo */
-  --accent-primary-glow: rgba(99, 102, 241, 0.3);
-  --accent-secondary: #ec4899; /* Pink */
-  --accent-secondary-glow: rgba(236, 72, 153, 0.3);
-  --accent-emerald: #10b981; /* Emerald */
-  --accent-emerald-glow: rgba(16, 185, 129, 0.3);
+  --accent-primary: #b0d500; /* Electric Lime */
+  --accent-primary-glow: rgba(176, 213, 0, 0.3);
+  --accent-secondary: #ffb4ab; /* Soft Coral (Accent / Error) */
+  --accent-secondary-glow: rgba(255, 180, 171, 0.3);
+  --accent-tertiary: #97cbff; /* Sky Blue (Hydration / Info) */
+  --accent-tertiary-glow: rgba(151, 203, 255, 0.3);
   
   /* Text colors */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: #dee2f7; /* On Surface */
+  --text-secondary: #aeb2c8; /* On Surface Variant */
+  --text-muted: #8f9378; /* Outline */
   
   /* Fonts */
-  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading: 'Lexend', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   
   /* Shadows & Glassmorphism */
   --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 12px 24px -4px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 20px 40px -8px rgba(0, 0, 0, 0.8);
   --shadow-glow: 0 0 20px 0 var(--accent-primary-glow);
-  --backdrop-blur: blur(12px);
+  --backdrop-blur: blur(20px);
   
   /* Border Radius */
   --radius-sm: 8px;
@@ -110,3 +110,737 @@ body {
     transform: translateY(0);
   }
 }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@keyframes pulseLime {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(176, 213, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px rgba(176, 213, 0, 0.4);
+  }
+}
+
+.shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* ==========================================================================
+   AUTHENTICATION LAYOUT & COMPONENTS
+   ========================================================================== */
+
+.auth-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(176, 213, 0, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(151, 203, 255, 0.05) 0px, transparent 50%);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-glass);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.auth-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-primary), var(--accent-tertiary), transparent);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.auth-brand-icon {
+  font-size: 1.8rem;
+  animation: float 4s ease-in-out infinite;
+}
+
+.auth-brand-name {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.auth-title {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+}
+
+.auth-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.auth-error-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 180, 171, 0.08);
+  border: 1px solid rgba(255, 180, 171, 0.2);
+  color: var(--accent-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Floating Label Form Group */
+.form-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.75rem 0 0.5rem 0;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.form-group label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: all var(--transition-fast) cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: left top;
+}
+
+/* Float label on focus and when input is not empty */
+.form-group input:focus ~ label,
+.form-group input:not(:placeholder-shown) ~ label {
+  transform: translateY(-1.2rem) scale(0.8);
+  color: var(--accent-primary);
+}
+
+.form-group input:focus {
+  border-bottom-color: var(--accent-primary);
+  box-shadow: 0 1px 0 var(--accent-primary);
+}
+
+.auth-btn-primary {
+  margin-top: 1rem;
+  background: var(--accent-primary);
+  color: #000000;
+  border: none;
+  padding: 0.85rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px var(--accent-primary-glow);
+  opacity: 0.95;
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-switch {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.auth-link {
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: color var(--transition-fast);
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+  filter: brightness(1.1);
+}
+
+/* ==========================================================================
+   DASHBOARD LAYOUT & BENTO SYSTEM
+   ========================================================================== */
+
+.dashboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 2rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: var(--backdrop-blur);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.user-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-tertiary);
+  padding: 0.4rem 0.85rem 0.4rem 0.4rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+}
+
+.user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+  color: #000000;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.user-name-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.role-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.role-tag.admin {
+  background: rgba(176, 213, 0, 0.1);
+  color: var(--accent-primary);
+  border: 1px solid rgba(176, 213, 0, 0.2);
+}
+
+.role-tag.user {
+  background: rgba(151, 203, 255, 0.1);
+  color: var(--accent-tertiary);
+  border: 1px solid rgba(151, 203, 255, 0.2);
+}
+
+.btn-logout {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-logout:hover {
+  background: rgba(255, 180, 171, 0.1);
+  border-color: var(--accent-secondary);
+  color: var(--accent-secondary);
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 2.5rem 2rem;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.welcome-banner {
+  margin-bottom: 2.5rem;
+}
+
+.welcome-banner h1 {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+}
+
+.welcome-banner p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Bento Box Grid */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.bento-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  backdrop-filter: var(--backdrop-blur);
+  display: flex;
+  flex-direction: column;
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+.bento-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.col-span-2 {
+  grid-column: span 2;
+}
+
+.bento-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.75rem;
+}
+
+.card-emoji {
+  font-size: 1.35rem;
+}
+
+.bento-card .card-header h3 {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.bento-card .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Bento Details: Profile Card */
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.detail-val {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Bento Details: Hydration & Calories */
+.metric-display {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.metric-num {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.metric-unit {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bg-tertiary {
+  background: linear-gradient(90deg, var(--accent-tertiary), #00a8ff);
+  box-shadow: 0 0 10px rgba(151, 203, 255, 0.25);
+}
+
+.bg-secondary {
+  background: linear-gradient(90deg, var(--accent-secondary), #ff6b8b);
+  box-shadow: 0 0 10px rgba(255, 180, 171, 0.25);
+}
+
+.card-tip {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: auto;
+}
+
+/* Bento Details: AI assistant message */
+.ai-message-bubble {
+  background: rgba(176, 213, 0, 0.03);
+  border: 1px solid rgba(176, 213, 0, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  position: relative;
+}
+
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  color: var(--accent-primary);
+}
+
+.sparkle-icon {
+  font-size: 1rem;
+  text-shadow: 0 0 8px var(--accent-primary);
+}
+
+.btn-ai-action {
+  margin-top: auto;
+  background: linear-gradient(135deg, var(--accent-tertiary), var(--accent-primary));
+  color: #000000;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  animation: pulseLime 3s infinite;
+  transition: transform var(--transition-fast);
+}
+
+.btn-ai-action:hover {
+  transform: translateY(-1px);
+}
+
+/* Bento Details: Activity Logger */
+.logger-body {
+  flex-direction: row !important;
+  gap: 2rem;
+}
+
+.logger-list-container {
+  flex: 1.5;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-workout-list {
+  list-style: none;
+  overflow-y: auto;
+  max-height: 160px;
+  padding-right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-workout-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+}
+
+.workout-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.workout-bullet {
+  color: var(--accent-primary);
+  font-weight: bold;
+}
+
+.workout-duration {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  color: var(--accent-primary);
+  background: rgba(176, 213, 0, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.workout-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.workout-summary {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.75rem;
+  margin-top: auto;
+}
+
+.dashboard-workout-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  padding-left: 2rem;
+}
+
+.form-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dashboard-workout-form select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: #ffffff;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.dashboard-workout-form select:focus {
+  border-color: var(--accent-primary);
+}
+
+.btn-add-workout {
+  background: var(--accent-primary);
+  color: #000000;
+  border: none;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-add-workout:hover {
+  box-shadow: 0 0 12px var(--accent-primary-glow);
+  transform: scale(1.02);
+}
+
+.no-workouts {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 1.5rem;
+  border: 1px dashed rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-footer {
+  margin-top: auto;
+  text-align: center;
+  padding: 1.5rem 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   UTILITIES
+   ========================================================================== */
+
+.text-secondary {
+  color: var(--accent-secondary) !important;
+}
+
+.text-tertiary {
+  color: var(--accent-tertiary) !important;
+}
+
+.text-primary-lime {
+  color: var(--accent-primary) !important;
+}
+
+/* Loading glow spinner */
+.loader-spinner-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  gap: 1.5rem;
+}
+
+.loader-glow-ring {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(176, 213, 0, 0.1);
+  border-top-color: var(--accent-primary);
+  border-radius: var(--radius-full);
+  animation: spin 1s infinite linear;
+  box-shadow: 0 0 15px rgba(176, 213, 0, 0.2);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive grid layout */
+@media (max-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+  .col-span-2 {
+    grid-column: span 1;
+  }
+  .logger-body {
+    flex-direction: column !important;
+    gap: 1.5rem;
+  }
+  .dashboard-workout-form {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 1.5rem;
+  }
+  .dashboard-header {
+    padding: 1rem;
+  }
+  .user-name-text {
+    display: none;
+  }
+}
+
