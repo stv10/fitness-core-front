@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "rxdb": "^17.3.0",
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
