@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import type { ReactNode } from 'react'
-
+import { getDatabase, closeDatabase } from '../db/db'
+import type { FitnessDatabase } from '../db/db'
 
 export interface UserResponse {
   id: string
@@ -14,6 +15,7 @@ interface AuthContextType {
   user: UserResponse | null
   token: string | null
   loading: boolean
+  db: FitnessDatabase | null
   login: (token: string, user: UserResponse) => void
   logout: () => void
   checkSession: () => Promise<void>
@@ -27,6 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserResponse | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
+  const [db, setDb] = useState<FitnessDatabase | null>(null)
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
@@ -62,10 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(userData)
     } catch (error) {
       console.error('Session check failed:', error)
-      // On network failure, we don't necessarily log out, but we might set loading to false.
-      // However, for this implementation, we will keep the token state if we can't verify,
-      // or we can log them out if it's an auth failure. Since status isn't 401 (it's network),
-      // we'll keep the loading false.
+      // On network failure, we still keep loading false
     } finally {
       setLoading(false)
     }
@@ -74,6 +74,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     checkSession()
   }, [])
+
+  // Handle local database lifecycle based on user session
+  useEffect(() => {
+    let active = true
+
+    if (user) {
+      getDatabase(user.id)
+        .then((database) => {
+          if (active) {
+            setDb(database)
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to initialize RxDB database:', err)
+        })
+    } else {
+      setDb(null)
+      closeDatabase().catch((err) => {
+        console.error('Failed to close RxDB database:', err)
+      })
+    }
+
+    return () => {
+      active = false
+    }
+  }, [user])
 
   const login = (newToken: string, newUser: UserResponse) => {
     localStorage.setItem(TOKEN_KEY, newToken)
@@ -85,10 +111,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     token,
     loading,
+    db,
     login,
     logout,
     checkSession
-  }), [user, token, loading])
+  }), [user, token, loading, db])
 
   return (
     <AuthContext.Provider value={contextValue}>
@@ -104,3 +131,4 @@ export const useAuth = () => {
   }
   return context
 }
+
