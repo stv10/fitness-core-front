@@ -1,0 +1,49 @@
+.strip {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  min-width: 2.6rem;
+  cursor: default;
+}
+
+.today {
+  background-color: var(--accent-primary);
+}
+
+.today .dayLabel,
+.today .dayNum {
+  color: #000000;
+}
+
+.other {
+  background-color: var(--bg-tertiary);
+}
+
+.other .dayLabel,
+.other .dayNum {
+  color: var(--text-secondary);
+}
+
+.dayLabel {
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dayNum {
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 600;
+}

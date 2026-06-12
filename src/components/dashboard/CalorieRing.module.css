@@ -1,0 +1,7 @@
+.ring {
+  display: block;
+}
+
+.progress {
+  transition: stroke-dashoffset 0.6s ease;
+}

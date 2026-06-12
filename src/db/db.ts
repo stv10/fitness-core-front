@@ -43,6 +43,7 @@ export interface DailyLogDoc {
   target_protein: number;
   target_carbs: number;
   target_fat: number;
+  water_ml: number;
   updatedAt: string;
 }
 
@@ -109,7 +110,7 @@ const userProfileSchema = {
 
 const dailyLogSchema = {
   title: 'daily log schema',
-  version: 0,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
@@ -120,9 +121,10 @@ const dailyLogSchema = {
     target_protein: { type: 'number' },
     target_carbs: { type: 'number' },
     target_fat: { type: 'number' },
+    water_ml: { type: 'number' },
     updatedAt: { type: 'string' }
   },
-  required: ['id', 'user_id', 'date', 'target_calories', 'target_protein', 'target_carbs', 'target_fat', 'updatedAt'],
+  required: ['id', 'user_id', 'date', 'target_calories', 'target_protein', 'target_carbs', 'target_fat', 'water_ml', 'updatedAt'],
   indexes: ['user_id']
 };
 
@@ -208,7 +210,12 @@ export async function getDatabase(userId: string): Promise<FitnessDatabase> {
   await activeDb.addCollections({
     users: { schema: userSchema },
     user_profiles: { schema: userProfileSchema },
-    daily_logs: { schema: dailyLogSchema },
+    daily_logs: {
+      schema: dailyLogSchema,
+      migrationStrategies: {
+        1: (oldDoc) => { oldDoc.water_ml = 0; return oldDoc; }
+      }
+    },
     food_items: { schema: foodItemSchema },
     meal_entries: { schema: mealEntrySchema }
   });

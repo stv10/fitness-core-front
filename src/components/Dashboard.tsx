@@ -8,13 +8,16 @@ import type {
   DailyLogDoc
 } from '../db/db'
 import { searchFoodFromAPI, getFoodByBarcodeFromAPI } from '../services/openFoodFacts'
-
-interface Workout {
-  id: number
-  type: string
-  duration: number
-  time: string
-}
+import styles from './Dashboard.module.css'
+import { DashboardHeader } from './dashboard/DashboardHeader'
+import { CalorieHero } from './dashboard/CalorieHero'
+import { MacroBars } from './dashboard/MacroBars'
+import { MealCard } from './dashboard/MealCard'
+import { HydrationTracker } from './dashboard/HydrationTracker'
+import { AiInsight } from './dashboard/AiInsight'
+import { BottomNav } from './dashboard/BottomNav'
+import { FoodSearchModal } from './dashboard/FoodSearchModal'
+import type { DashboardTab } from './dashboard/BottomNav'
 
 export const Dashboard: React.FC = () => {
   const { user, logout, db } = useAuth()
@@ -36,6 +39,11 @@ export const Dashboard: React.FC = () => {
   const [goalCarb, setGoalCarb] = useState('220')
   const [goalFat, setGoalFat] = useState('70')
 
+  // --- Navigation & Modal States ---
+  const [activeTab, setActiveTab] = useState<DashboardTab>('home')
+  const [isFoodSearchOpen, setIsFoodSearchOpen] = useState(false)
+  const [foodSearchMealType, setFoodSearchMealType] = useState<MealType>('BREAKFAST')
+
   // --- Food Search States ---
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<FoodItemDoc[]>([])
@@ -53,21 +61,13 @@ export const Dashboard: React.FC = () => {
   const [customCarb, setCustomCarb] = useState('')
   const [customFat, setCustomFat] = useState('')
 
-  // --- Workouts Simulation States (kept from original) ---
-  const [workouts, setWorkouts] = useState<Workout[]>([
-    { id: 1, type: 'Cardio Run', duration: 30, time: '08:30 AM' },
-    { id: 2, type: 'Entrenamiento de Fuerza', duration: 45, time: '12:15 PM' }
-  ])
-  const [workoutType, setWorkoutType] = useState('Cardio')
-  const [workoutDuration, setWorkoutDuration] = useState('30')
-
   // --- DB Auto-Initialization Effect ---
   useEffect(() => {
     if (!db || !user) return
 
     const initializeUserMetrics = async () => {
       // 1. Ensure profile exists
-      let userProfile = await db.user_profiles.findOne({ selector: { user_id: user.id } }).exec()
+      const userProfile = await db.user_profiles.findOne({ selector: { user_id: user.id } }).exec()
       let activeProfile: UserProfileDoc
 
       if (!userProfile) {
@@ -107,6 +107,7 @@ export const Dashboard: React.FC = () => {
           target_protein: activeProfile.target_protein,
           target_carbs: activeProfile.target_carbs,
           target_fat: activeProfile.target_fat,
+          water_ml: 0,
           updatedAt: new Date().toISOString()
         })
       }
@@ -351,7 +352,7 @@ export const Dashboard: React.FC = () => {
     const fat = parseFloat(customFat) || 0
 
     const customId = crypto.randomUUID ? crypto.randomUUID() : `custom_${Date.now()}_${Math.random().toString(36).substring(5)}`
-    
+
     const newCustomFood: FoodItemDoc = {
       id: customId,
       name: customName,
@@ -368,7 +369,7 @@ export const Dashboard: React.FC = () => {
       await db.food_items.insert(newCustomFood)
       setSelectedFood(newCustomFood)
       setIsCreatingCustom(false)
-      
+
       // Clear inputs
       setCustomName('')
       setCustomBrand('')
@@ -393,624 +394,254 @@ export const Dashboard: React.FC = () => {
     }
   }
 
-  // --- Workout simulation logger (kept from original) ---
-  const addWorkout = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!workoutType || !workoutDuration) return
+  // --- Water intake (derived from dailyLog) ---
+  const waterMl = dailyLog?.water_ml ?? 0
 
-    const newWorkout: Workout = {
-      id: Date.now(),
-      type: workoutType,
-      duration: parseInt(workoutDuration),
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const handleAdjustWater = async (deltaMl: number) => {
+    if (!db || !dailyLog) return
+    const next = Math.min(3000, Math.max(0, waterMl + deltaMl))
+    try {
+      const doc = await db.daily_logs.findOne({ selector: { id: logId } }).exec()
+      if (doc) {
+        await doc.patch({ water_ml: next, updatedAt: new Date().toISOString() })
+      }
+    } catch (err) {
+      console.error('Failed to update water intake:', err)
     }
-
-    setWorkouts([newWorkout, ...workouts])
-    setWorkoutType('Cardio')
-    setWorkoutDuration('30')
   }
 
-  const totalWorkoutMinutes = workouts.reduce((sum, w) => sum + w.duration, 0)
+  // --- Open food search modal ---
+  const openFoodSearch = (mealType: MealType) => {
+    setFoodSearchMealType(mealType)
+    setLogMealType(mealType)
+    setIsFoodSearchOpen(true)
+  }
 
-  if (!user) return null
+  // --- Week days strip ---
+  const weekDays = useMemo(() => {
+    const today = new Date()
+    const dayOfWeek = today.getDay() // 0=Sun
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7)) // start of this week (Mon)
+    const labels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+    return labels.map((label, i) => {
+      const d = new Date(monday)
+      d.setDate(monday.getDate() + i)
+      const dateStr = d.toLocaleDateString('en-CA') // YYYY-MM-DD
+      return {
+        label,
+        date: dateStr,
+        dayNum: String(d.getDate()),
+        isToday: dateStr === todayDate
+      }
+    })
+  }, [todayDate])
 
-  // Date formatted display
-  const joinedDate = user.id ? 'Hoy' : 'Recientemente'
+  // --- User display ---
+  const userInitials = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : ''
+  const userName = user ? `${user.firstName} ${user.lastName}` : ''
 
-  // Targets from today's daily log (fallbacks to profile or defaults)
+  // --- Targets ---
   const targetCal = dailyLog?.target_calories || profile?.target_calories || 2000
   const targetProt = dailyLog?.target_protein || profile?.target_protein || 130
   const targetCarb = dailyLog?.target_carbs || profile?.target_carbs || 220
   const targetFat = dailyLog?.target_fat || profile?.target_fat || 70
 
-  // Calculate percentages
-  const caloriesPercent = Math.min(100, (consumptionTotals.calories / targetCal) * 100)
-  const proteinPercent = Math.min(100, (consumptionTotals.protein / targetProt) * 100)
-  const carbsPercent = Math.min(100, (consumptionTotals.carbs / targetCarb) * 100)
-  const fatPercent = Math.min(100, (consumptionTotals.fat / targetFat) * 100)
+  // --- AI insight message ---
+  const aiInsightMessage =
+    consumptionTotals.calories === 0
+      ? 'Start logging your meals to get personalized insights.'
+      : `You have consumed ${consumptionTotals.calories} kcal of your ${targetCal} kcal goal. Keep protein at ${consumptionTotals.protein}g / ${targetProt}g to support muscle recovery.`
 
-  // Group meal entries for display
-  const mealsGrouped = {
-    BREAKFAST: mealEntries.filter((e) => e.meal_type === 'BREAKFAST'),
-    LUNCH: mealEntries.filter((e) => e.meal_type === 'LUNCH'),
-    DINNER: mealEntries.filter((e) => e.meal_type === 'DINNER'),
-    SNACK: mealEntries.filter((e) => e.meal_type === 'SNACK')
+  // --- Macros data ---
+  const macrosData = [
+    { label: 'Protein' as const, current: consumptionTotals.protein, target: targetProt, percent: Math.min(100, (consumptionTotals.protein / targetProt) * 100) },
+    { label: 'Carbs' as const, current: consumptionTotals.carbs, target: targetCarb, percent: Math.min(100, (consumptionTotals.carbs / targetCarb) * 100) },
+    { label: 'Fats' as const, current: consumptionTotals.fat, target: targetFat, percent: Math.min(100, (consumptionTotals.fat / targetFat) * 100) },
+  ]
+
+  // --- Custom food fields object ---
+  const customFields = {
+    name: customName,
+    brand: customBrand,
+    cal: customCal,
+    prot: customProt,
+    carb: customCarb,
+    fat: customFat
   }
 
-  const mealTypeLabels: Record<keyof typeof mealsGrouped, string> = {
-    BREAKFAST: 'Desayuno',
-    LUNCH: 'Almuerzo',
-    DINNER: 'Cena',
-    SNACK: 'Snacks / Colaciones'
+  const handleCustomFieldChange = (field: keyof typeof customFields, value: string) => {
+    const setters = {
+      name: setCustomName,
+      brand: setCustomBrand,
+      cal: setCustomCal,
+      prot: setCustomProt,
+      carb: setCustomCarb,
+      fat: setCustomFat
+    }
+    setters[field](value)
   }
+
+  // --- Meal card data helpers ---
+  const mealCardEntries = (mealType: MealType) =>
+    mealEntries
+      .filter((e) => e.meal_type === mealType)
+      .map((e) => {
+        const food = foodItems[e.food_id]
+        return {
+          id: e.id,
+          name: food?.name ?? 'Unknown food',
+          brand: food?.brand,
+          amountG: e.amount_g,
+          kcal: food ? Math.round(food.calories_per_100g * (e.amount_g / 100)) : 0
+        }
+      })
+
+  const mealTotalKcal = (mealType: MealType) =>
+    mealCardEntries(mealType).reduce((sum, e) => sum + e.kcal, 0)
+
+  if (!user) return null
 
   return (
-    <div className="dashboard-wrapper">
-      {/* Navigation Header */}
-      <header className="dashboard-header">
-        <div className="brand">
-          <span className="brand-icon">⚡</span>
-          <span className="brand-name">Fitness Core</span>
-        </div>
-        <div className="user-nav">
-          <div className="user-profile-badge">
-            <span className="user-avatar">{user.firstName[0]}{user.lastName[0]}</span>
-            <span className="user-name-text">{user.firstName} {user.lastName}</span>
-            <span className={`role-tag ${user.role.toLowerCase()}`}>{user.role}</span>
-          </div>
-          <button className="btn-logout" onClick={logout}>
-            Cerrar Sesión
-          </button>
-        </div>
-      </header>
+    <div className={styles.wrapper}>
+      <DashboardHeader
+        userInitials={userInitials}
+        userName={userName}
+        streakDays={15}
+        weekDays={weekDays}
+        todayDate={todayDate}
+        onLogout={logout}
+      />
 
-      {/* Main Content Dashboard */}
-      <main className="dashboard-content">
-        <section className="welcome-banner">
-          <h1>¡Hola, {user.firstName}! 👋</h1>
-          <p>Tu sesión está activa. Tus metas nutricionales y logs diarios se procesan de forma local e instantánea (Local-First).</p>
-        </section>
+      <main className={styles.main}>
+        <CalorieHero consumed={consumptionTotals.calories} target={targetCal} />
 
-        {/* Bento Grid layout */}
-        <div className="bento-grid">
-          
-          {/* Card 1: Perfil de Usuario */}
-          <div className="bento-card card-profile">
-            <div className="card-header">
-              <span className="card-emoji">👤</span>
-              <h3>Perfil del Atleta</h3>
-            </div>
-            <div className="card-body">
-              <div className="profile-details">
-                <div className="detail-item">
-                  <span className="detail-label">NOMBRE</span>
-                  <span className="detail-val">{user.firstName} {user.lastName}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">EMAIL</span>
-                  <span className="detail-val">{user.email}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">REGISTRO</span>
-                  <span className="detail-val">{joinedDate}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <MacroBars macros={macrosData} />
 
-          {/* Card 2: Objetivos de Nutrición (Configurable Goals) */}
-          <div className="bento-card card-goals">
-            <div className="card-header">
-              <span className="card-emoji">🎯</span>
-              <h3>Objetivos Diarios</h3>
-            </div>
-            <div className="card-body">
-              {!isEditingGoals ? (
-                <div className="profile-details">
-                  <div className="detail-item">
-                    <span className="detail-label">CALORÍAS OBJETIVO</span>
-                    <span className="detail-val">{targetCal} kcal</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">MACRONUTRIENTES</span>
-                    <span className="detail-val" style={{ fontSize: '0.85rem' }}>
-                      Proteínas: <strong>{targetProt}g</strong> | Carbohidratos: <strong>{targetCarb}g</strong> | Grasas: <strong>{targetFat}g</strong>
-                    </span>
-                  </div>
-                  <button
-                    className="btn-primary"
-                    onClick={() => setIsEditingGoals(true)}
-                    style={{ marginTop: '1rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                  >
-                    Editar Metas
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSaveGoals} className="goals-form">
-                  <div className="goals-form-grid">
-                    <div className="goals-input-group">
-                      <label>Calorías (kcal)</label>
-                      <input
-                        type="number"
-                        value={goalCal}
-                        onChange={(e) => setGoalCal(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="goals-input-group">
-                      <label>Proteínas (g)</label>
-                      <input
-                        type="number"
-                        value={goalProt}
-                        onChange={(e) => setGoalProt(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="goals-input-group">
-                      <label>Carbohidratos (g)</label>
-                      <input
-                        type="number"
-                        value={goalCarb}
-                        onChange={(e) => setGoalCarb(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="goals-input-group">
-                      <label>Grasas (g)</label>
-                      <input
-                        type="number"
-                        value={goalFat}
-                        onChange={(e) => setGoalFat(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="goals-form-actions">
-                    <button type="button" className="btn-small btn-small-secondary" onClick={() => setIsEditingGoals(false)}>
-                      Cancelar
-                    </button>
-                    <button type="submit" className="btn-small btn-small-primary">
-                      Guardar
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-
-          {/* Card 3: Energía y Macros (Real-Time Live calculation) */}
-          <div className="bento-card card-calories">
-            <div className="card-header">
-              <span className="card-emoji">🔥</span>
-              <h3>Energía y Macros</h3>
-            </div>
-            <div className="card-body">
-              <div className="metric-display">
-                <span className="metric-num text-secondary">{consumptionTotals.calories}</span>
-                <span className="metric-unit">/ {targetCal} kcal</span>
-              </div>
-              
-              <div className="progress-bar-container">
-                <div className="progress-bar bg-secondary" style={{ width: `${caloriesPercent}%` }}></div>
-              </div>
-              <span className="detail-label" style={{ marginBottom: '1rem', display: 'block' }}>
-                CONSUMIDO: {caloriesPercent.toFixed(1)}% DE TU META
+        {/* Goals editor — inline section, no dedicated component */}
+        <section className={styles.goalsSection}>
+          {!isEditingGoals ? (
+            <div className={styles.goalsDisplay}>
+              <span className={styles.goalsLabel}>Daily Goals</span>
+              <span className={styles.goalsSummary}>
+                {targetCal} kcal · P {targetProt}g · C {targetCarb}g · F {targetFat}g
               </span>
-
-              {/* Progress bars for macronutrients */}
-              <div className="macro-progress-list">
-                {/* Protein */}
-                <div className="macro-progress-item">
-                  <div className="macro-progress-header">
-                    <span className="macro-name">Proteínas</span>
-                    <span className="macro-val">{consumptionTotals.protein}g / {targetProt}g</span>
-                  </div>
-                  <div className="macro-bar-outer">
-                    <div className="macro-bar-inner macro-bar-protein" style={{ width: `${proteinPercent}%` }}></div>
-                  </div>
-                </div>
-
-                {/* Carbohydrates */}
-                <div className="macro-progress-item">
-                  <div className="macro-progress-header">
-                    <span className="macro-name">Carbohidratos</span>
-                    <span className="macro-val">{consumptionTotals.carbs}g / {targetCarb}g</span>
-                  </div>
-                  <div className="macro-bar-outer">
-                    <div className="macro-bar-inner macro-bar-carbs" style={{ width: `${carbsPercent}%` }}></div>
-                  </div>
-                </div>
-
-                {/* Fats */}
-                <div className="macro-progress-item">
-                  <div className="macro-progress-header">
-                    <span className="macro-name">Grasas</span>
-                    <span className="macro-val">{consumptionTotals.fat}g / {targetFat}g</span>
-                  </div>
-                  <div className="macro-bar-outer">
-                    <div className="macro-bar-inner macro-bar-fat" style={{ width: `${fatPercent}%` }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Food Diary Tracker (Double column span) */}
-          <div className="bento-card col-span-2 card-food-diary">
-            <div className="card-header" style={{ justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className="card-emoji">🍎</span>
-                <h3>Diario de Alimentación</h3>
-              </div>
-              <div className="off-attribution">
-                <span>Datos:</span>
-                <span className="off-logo">Open Food Facts</span>
-                <a href="https://openfoodfacts.org" target="_blank" rel="noopener noreferrer">(web)</a>
-              </div>
-            </div>
-            <div className="card-body logger-body">
-              {/* Left Side: Logged meals grouped by meal type */}
-              <div className="logger-list-container" style={{ flex: 1.2 }}>
-                <div className="meal-diary-list">
-                  {mealEntries.length === 0 ? (
-                    <div className="no-workouts" style={{ padding: '3rem 1.5rem' }}>
-                      No has registrado alimentos para el día de hoy.
-                    </div>
-                  ) : (
-                    (Object.keys(mealsGrouped) as Array<keyof typeof mealsGrouped>).map((type) => {
-                      const entries = mealsGrouped[type]
-                      if (entries.length === 0) return null
-
-                      return (
-                        <div key={type} className="meal-diary-group">
-                          <h4 className="meal-group-title">{mealTypeLabels[type]}</h4>
-                          {entries.map((entry) => {
-                            const food = foodItems[entry.food_id]
-                            const kcal = food
-                              ? Math.round(food.calories_per_100g * (entry.amount_g / 100))
-                              : 0
-
-                            return (
-                              <div key={entry.id} className="meal-diary-item">
-                                <div className="meal-item-details">
-                                  <span className="meal-item-name">{food?.name || 'Cargando...'}</span>
-                                  <span className="meal-item-sub">
-                                    {food?.brand ? `${food.brand} • ` : ''}{entry.amount_g}g 
-                                    {food ? ` (P:${food.protein_per_100g}g C:${food.carbs_per_100g}g G:${food.fat_per_100g}g por 100g)` : ''}
-                                  </span>
-                                </div>
-                                <div className="meal-item-actions">
-                                  <span className="meal-item-calories">{kcal} kcal</span>
-                                  <button
-                                    className="btn-delete-item"
-                                    onClick={() => handleDeleteMealEntry(entry.id)}
-                                    title="Eliminar porción"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* Right Side: Search & Log Food forms */}
-              <div className="dashboard-workout-form" style={{ flex: 1, borderLeft: '1px solid rgba(255, 255, 255, 0.05)', paddingLeft: '1.5rem' }}>
-                {!selectedFood ? (
-                  <div className="food-logger-wrapper">
-                    <div className="food-search-box">
-                      <div className="search-input-wrapper">
-                        <input
-                          type="text"
-                          placeholder="Buscar alimento o ingresar código..."
-                          value={searchQuery}
-                          onChange={(e) => {
-                            setSearchQuery(e.target.value)
-                            setIsCreatingCustom(false)
-                          }}
-                        />
-                        <button
-                          type="button"
-                          className="btn-add-workout"
-                          style={{ fontSize: '0.85rem', padding: '0 0.75rem' }}
-                          onClick={() => {
-                            setIsCreatingCustom(!isCreatingCustom)
-                            setSearchQuery('')
-                          }}
-                        >
-                          {isCreatingCustom ? 'Volver' : 'Nuevo'}
-                        </button>
-                      </div>
-
-                      {/* Search results dropdown */}
-                      {searchQuery.trim().length >= 2 && (
-                        <div className="search-results-container">
-                          {isSearching && <div className="search-loading-text">Buscando en Open Food Facts y caché...</div>}
-                          {!isSearching && searchResults.length === 0 && (
-                            <div className="search-loading-text">No se encontraron resultados.</div>
-                          )}
-                          {searchResults.map((food) => (
-                            <div
-                              key={food.id}
-                              className="search-result-row"
-                              onClick={() => setSelectedFood(food)}
-                            >
-                              <div className="search-result-info">
-                                <span className="search-result-title">{food.name}</span>
-                                <span className="search-result-brand">
-                                  {food.brand ? `${food.brand} • ` : ''}
-                                  <span className={`source-badge ${food.source === 'OPEN_FOOD_FACTS' ? 'off' : 'personal'}`}>
-                                    {food.source === 'OPEN_FOOD_FACTS' ? 'OFF' : 'Personal'}
-                                  </span>
-                                </span>
-                                <span className="search-result-nutriments">
-                                  {food.calories_per_100g} kcal | P: {food.protein_per_100g}g | C: {food.carbs_per_100g}g | G: {food.fat_per_100g}g
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Form to create manual personal food item */}
-                    {isCreatingCustom && (
-                      <form onSubmit={handleCreateCustomFood} className="goals-form" style={{ marginTop: '0', background: 'none', border: 'none', padding: '0' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          <div className="goals-input-group">
-                            <label>Nombre del Alimento</label>
-                            <input
-                              type="text"
-                              placeholder="Ej: Avena Instantánea"
-                              value={customName}
-                              onChange={(e) => setCustomName(e.target.value)}
-                              required
-                            />
-                          </div>
-                          <div className="goals-input-group">
-                            <label>Marca (opcional)</label>
-                            <input
-                              type="text"
-                              placeholder="Ej: Quaker"
-                              value={customBrand}
-                              onChange={(e) => setCustomBrand(e.target.value)}
-                            />
-                          </div>
-                          <div className="goals-form-grid">
-                            <div className="goals-input-group">
-                              <label>Kcal por 100g</label>
-                              <input
-                                type="number"
-                                placeholder="350"
-                                value={customCal}
-                                onChange={(e) => setCustomCal(e.target.value)}
-                                required
-                              />
-                            </div>
-                            <div className="goals-input-group">
-                              <label>Prot (g) por 100g</label>
-                              <input
-                                type="number"
-                                step="0.1"
-                                placeholder="12"
-                                value={customProt}
-                                onChange={(e) => setCustomProt(e.target.value)}
-                                required
-                              />
-                            </div>
-                            <div className="goals-input-group">
-                              <label>Carb (g) por 100g</label>
-                              <input
-                                type="number"
-                                step="0.1"
-                                placeholder="60"
-                                value={customCarb}
-                                onChange={(e) => setCustomCarb(e.target.value)}
-                                required
-                              />
-                            </div>
-                            <div className="goals-input-group">
-                              <label>Grasas (g) por 100g</label>
-                              <input
-                                type="number"
-                                step="0.1"
-                                placeholder="6"
-                                value={customFat}
-                                onChange={(e) => setCustomFat(e.target.value)}
-                                required
-                              />
-                            </div>
-                          </div>
-                          <button
-                            type="submit"
-                            className="btn-add-workout"
-                            style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}
-                          >
-                            Crear y Seleccionar
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
-                ) : (
-                  /* Form to log portion weight */
-                  <form onSubmit={handleLogMeal} className="logging-panel">
-                    <div className="logging-title">Registrar Consumo</div>
-                    <div style={{ fontSize: '0.85rem', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '0.5rem' }}>
-                      <strong>{selectedFood.name}</strong>
-                      {selectedFood.brand && <span style={{ color: 'var(--text-secondary)' }}> ({selectedFood.brand})</span>}
-                    </div>
-                    
-                    <div className="goals-form-grid" style={{ gridTemplateColumns: '1fr' }}>
-                      <div className="logging-form-group">
-                        <label>Cantidad consumida (en gramos)</label>
-                        <input
-                          type="number"
-                          value={logAmount}
-                          onChange={(e) => setLogAmount(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="logging-form-group">
-                        <label>Comida del día</label>
-                        <select
-                          value={logMealType}
-                          onChange={(e) => setLogMealType(e.target.value as MealType)}
-                        >
-                          <option value="BREAKFAST">Desayuno</option>
-                          <option value="LUNCH">Almuerzo</option>
-                          <option value="DINNER">Cena</option>
-                          <option value="SNACK">Snack</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                      <button
-                        type="button"
-                        className="btn-small btn-small-secondary"
-                        style={{ flex: 1, padding: '0.6rem' }}
-                        onClick={() => setSelectedFood(null)}
-                      >
-                        Atrás
-                      </button>
-                      <button
-                        type="submit"
-                        className="btn-small btn-small-primary"
-                        style={{ flex: 2, padding: '0.6rem' }}
-                      >
-                        Registrar Porción
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Card 5: Interactive Workout Simulator (Kept in 1 column) */}
-          <div className="bento-card card-workouts">
-            <div className="card-header">
-              <span className="card-emoji">🏋️</span>
-              <h3>Actividad Física</h3>
-            </div>
-            <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div className="logger-list-container">
-                <ul className="dashboard-workout-list" style={{ maxHeight: '110px' }}>
-                  {workouts.length === 0 ? (
-                    <li className="no-workouts">No hay actividades registradas hoy.</li>
-                  ) : (
-                    workouts.map((w) => (
-                      <li key={w.id} className="dashboard-workout-item" style={{ padding: '0.4rem 0.6rem' }}>
-                        <div className="workout-info">
-                          <span className="workout-bullet">•</span>
-                          <strong>{w.type}</strong>
-                          <span className="workout-duration" style={{ fontSize: '0.65rem', padding: '0.05rem 0.25rem' }}>{w.duration} min</span>
-                        </div>
-                        <span className="workout-time" style={{ fontSize: '0.65rem' }}>{w.time}</span>
-                      </li>
-                    ))
-                  )}
-                </ul>
-                <div className="workout-summary" style={{ paddingTop: '0.5rem', fontSize: '0.8rem' }}>
-                  <span>Total Ejercicio:</span>
-                  <span className="text-primary-lime">{totalWorkoutMinutes} minutos</span>
-                </div>
-              </div>
-
-              <form onSubmit={addWorkout} className="dashboard-workout-form" style={{ borderLeft: 'none', paddingLeft: '0', marginTop: 'auto' }}>
-                <div className="form-select-group" style={{ gap: '0.5rem' }}>
-                  <select 
-                    value={workoutType} 
-                    onChange={(e) => setWorkoutType(e.target.value)}
-                    style={{ padding: '0.4rem' }}
-                  >
-                    <option value="Cardio">Cardio</option>
-                    <option value="Entrenamiento de Fuerza">Fuerza</option>
-                    <option value="Yoga / Estiramiento">Yoga</option>
-                    <option value="Ciclismo">Ciclismo</option>
-                    <option value="Natación">Natación</option>
-                  </select>
-                  <select 
-                    value={workoutDuration} 
-                    onChange={(e) => setWorkoutDuration(e.target.value)}
-                    style={{ padding: '0.4rem' }}
-                  >
-                    <option value="15">15 min</option>
-                    <option value="30">30 min</option>
-                    <option value="45">45 min</option>
-                    <option value="60">60 min</option>
-                    <option value="90">90 min</option>
-                  </select>
-                </div>
-                <button type="submit" className="btn-add-workout" style={{ padding: '0.4rem' }}>+</button>
-              </form>
-            </div>
-          </div>
-
-          {/* Card 6: AI Recommendations (kept from original) */}
-          <div className="bento-card card-ai">
-            <div className="card-header">
-              <span className="card-emoji">✨</span>
-              <h3>Recomendaciones IA</h3>
-            </div>
-            <div className="card-body">
-              <div className="ai-message-bubble" style={{ padding: '0.85rem' }}>
-                <div className="ai-header">
-                  <span className="sparkle-icon">✦</span>
-                  <strong>Fitness Core AI</strong>
-                </div>
-                <p style={{ fontSize: '0.8rem' }}>
-                  {consumptionTotals.calories === 0 
-                    ? "Registrá tu primera comida del día para que la Inteligencia Artificial pueda sugerirte snacks óptimos basados en tu actividad física y objetivos de macronutrientes."
-                    : `Has consumido ${consumptionTotals.calories} kcal de tu objetivo de ${targetCal} kcal. Asegurá consumir suficientes proteínas (${consumptionTotals.protein}/${targetProt}g) para apoyar la recuperación muscular.`
-                  }
-                </p>
-              </div>
-              <button className="btn-ai-action" style={{ padding: '0.55rem 1rem', fontSize: '0.8rem' }}>
-                <span>Generar Rutina de Mañana</span>
+              <button
+                type="button"
+                className={styles.editGoalsBtn}
+                onClick={() => setIsEditingGoals(true)}
+              >
+                Edit Goals
               </button>
             </div>
-          </div>
-
-          {/* Card 7: Hydration Stats (kept from original) */}
-          <div className="bento-card card-hydration">
-            <div className="card-header">
-              <span className="card-emoji">💧</span>
-              <h3>Hidratación</h3>
-            </div>
-            <div className="card-body">
-              <div className="metric-display">
-                <span className="metric-num text-tertiary">1.2</span>
-                <span className="metric-unit">/ 3.0 Litros</span>
+          ) : (
+            <form className={styles.goalsForm} onSubmit={handleSaveGoals}>
+              <div className={styles.goalsGrid}>
+                <div className={styles.goalsInputGroup}>
+                  <label htmlFor="goal-cal">Calories (kcal)</label>
+                  <input
+                    id="goal-cal"
+                    type="number"
+                    value={goalCal}
+                    onChange={(e) => setGoalCal(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className={styles.goalsInputGroup}>
+                  <label htmlFor="goal-prot">Protein (g)</label>
+                  <input
+                    id="goal-prot"
+                    type="number"
+                    value={goalProt}
+                    onChange={(e) => setGoalProt(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className={styles.goalsInputGroup}>
+                  <label htmlFor="goal-carb">Carbs (g)</label>
+                  <input
+                    id="goal-carb"
+                    type="number"
+                    value={goalCarb}
+                    onChange={(e) => setGoalCarb(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className={styles.goalsInputGroup}>
+                  <label htmlFor="goal-fat">Fat (g)</label>
+                  <input
+                    id="goal-fat"
+                    type="number"
+                    value={goalFat}
+                    onChange={(e) => setGoalFat(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
-              <div className="progress-bar-container">
-                <div className="progress-bar bg-tertiary" style={{ width: '40%' }}></div>
+              <div className={styles.goalsActions}>
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={() => setIsEditingGoals(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className={styles.saveBtn}>
+                  Save
+                </button>
               </div>
-              <p className="card-tip">¡Buen ritmo! Necesitás tomar 1.8L más hoy para cumplir tu meta.</p>
-            </div>
-          </div>
+            </form>
+          )}
+        </section>
 
-        </div>
+        <section className={styles.mealGrid}>
+          {(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as MealType[]).map((type) => (
+            <MealCard
+              key={type}
+              mealType={type}
+              title={type === 'SNACK' ? 'Snacks' : type.charAt(0) + type.slice(1).toLowerCase()}
+              entries={mealCardEntries(type)}
+              totalKcal={mealTotalKcal(type)}
+              onAddFood={openFoodSearch}
+              onDeleteEntry={handleDeleteMealEntry}
+            />
+          ))}
+        </section>
+
+        <HydrationTracker waterMl={waterMl} onAdjust={handleAdjustWater} />
+
+        <AiInsight message={aiInsightMessage} />
       </main>
 
-      <footer className="dashboard-footer">
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-          <span>© 2026 Fitness Core Project. Local-First Database & Caching con RxDB.</span>
-          <div className="off-attribution">
-            <span>Datos de alimentos provistos bajo licencia ODbL por </span>
-            <a href="https://openfoodfacts.org" target="_blank" rel="noopener noreferrer" className="off-logo">
-              Open Food Facts
-            </a>
-            <span> y sus colaboradores.</span>
-          </div>
-        </div>
-      </footer>
+      <BottomNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onAddPress={() => openFoodSearch('BREAKFAST')}
+      />
+
+      <FoodSearchModal
+        isOpen={isFoodSearchOpen}
+        mealType={foodSearchMealType}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        isSearching={isSearching}
+        searchResults={searchResults}
+        selectedFood={selectedFood}
+        onSelectFood={setSelectedFood}
+        logAmount={logAmount}
+        onLogAmountChange={setLogAmount}
+        onLogMeal={handleLogMeal}
+        isCreatingCustom={isCreatingCustom}
+        onToggleCustom={() => setIsCreatingCustom(!isCreatingCustom)}
+        customFields={customFields}
+        onCustomFieldChange={handleCustomFieldChange}
+        onCreateCustom={handleCreateCustomFood}
+        onClose={() => {
+          setIsFoodSearchOpen(false)
+          setSelectedFood(null)
+          setSearchQuery('')
+        }}
+      />
     </div>
   )
 }
